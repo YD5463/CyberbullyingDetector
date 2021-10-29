@@ -12,8 +12,9 @@ import re
 
 def merge_datasets() -> pd.DataFrame:
     df = pd.DataFrame()
-    for filename in os.listdir('./Data/Source1'):
-        df1 = pd.read_csv(f'./Data/Source1/{filename}')
+    data_path = './Data/Source1'
+    for filename in os.listdir(data_path):
+        df1 = pd.read_csv(f'{data_path}/{filename}')
         df1 = df1[['Text', 'oh_label']]
         df = pd.concat([df, df1], axis=0)
     return df
@@ -56,7 +57,7 @@ def filter_noise(df: pd.DataFrame) -> pd.DataFrame:
     return df[df.columns.intersection(ls)]
 
 
-def preprocess(use_cache=True) -> (np.ndarray, np.ndarray):
+def preprocess(train_part=0.7, use_cache=True) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
     cleaned_output_path = "./Data/Source1/cleaned.csv"
     if use_cache and os.path.isfile(cleaned_output_path):
         df = pd.read_csv(cleaned_output_path)
@@ -69,4 +70,7 @@ def preprocess(use_cache=True) -> (np.ndarray, np.ndarray):
         label_name = "oh_label"
     x = df.drop(label_name)
     y = df[label_name]
-    return x, y
+    num_rows = x.shape[0]
+    mask_train = np.zeros(num_rows, dtype=bool)
+    mask_train[np.random.choice(num_rows,int(num_rows*train_part), replace=False)] = True
+    return x[mask_train, :], y[mask_train], x[~mask_train,:],y[~mask_train]

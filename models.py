@@ -3,7 +3,7 @@ tf.disable_v2_behavior()
 
 
 class LogisticRegression:
-    def __init__(self,X_train,y_train,num_iter=5000,learning_rate=0.001):
+    def __init__(self, X_train, y_train, num_iter=5000, learning_rate=0.001):
         self.sess = tf.Session()
         features = X_train.shape[1]
         eps = 1e-12
@@ -20,9 +20,18 @@ class LogisticRegression:
             if i % 1000 == 0:
                 print(f"iteration {i}: loss value is: {loss_value}")
 
-    def predict(self,X_test):
+    def predict(self, X_test, thr=0.5):
         predictions = self.sess.run(self.y, feed_dict={self.x: X_test.to_numpy()})
-        thr = 0.05
         predictions[predictions >= thr] = 1
         predictions[predictions < thr] = 0
 
+
+class MLP:
+    """
+    multi level perceprton implementation using tensorflow version 1
+    """
+    def __init__(self):
+        pass
+
+    def predict(self):
+        pass
