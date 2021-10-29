@@ -1,5 +1,6 @@
-nltk
-tensorflow
-sklearn
-numpy
-pandas
+nltk~=3.6.5
+tensorflow~=2.6.0
+sklearn~=0.0
+numpy~=1.19.5
+pandas~=1.3.4
+scikit-learn~=1.0.1
