@@ -64,12 +64,12 @@ def add_avg_sentence_len_feature(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_uppercase_count_feature(df: pd.DataFrame):
+def add_uppercase_count_feature(df: pd.DataFrame) -> pd.DataFrame:
     df["uppercase_count"] = df['Text'].str.findall(r'[A-Z]').str.len()
     return df
 
 
-def add_pos_features(df: pd.DataFrame):
+def add_pos_features(df: pd.DataFrame) -> pd.DataFrame:
     def group_pos(tag):
         groups = {"noun": ['NN', 'NNS', 'NNP', 'NNPS'], "verb": ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ'],
                   "adverb": ['RB', 'RBR', 'RBS'], "adjective": ['JJ', 'JJR', 'JJS']}
@@ -118,7 +118,7 @@ def filter_noise(df: pd.DataFrame) -> pd.DataFrame:
 
 def preprocess(train_part=0.7, use_cache=True) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
     print("preprocess...")
-    cleaned_output_path = "./Data/Source1/cleaned.csv"
+    cleaned_output_path = "./Data/cleaned.csv"
     if use_cache and os.path.isfile(cleaned_output_path):
         df = pd.read_csv(cleaned_output_path)
     else:

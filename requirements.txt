@@ -4,3 +4,5 @@ sklearn
 numpy
 pandas
 scikit-learn
+pyenchant
+swifter
