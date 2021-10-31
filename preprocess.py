@@ -7,7 +7,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from enchant.checker import SpellChecker
-
+import swifter
 import re
 
 
@@ -23,7 +23,7 @@ def merge_datasets() -> pd.DataFrame:
 
 def add_punctuation_and_stopwords_features(df: pd.DataFrame) -> pd.DataFrame:
     for ch in list(string.punctuation) + stopwords.words('english'):
-        df[ch] = df['Text'].astype(str).map(lambda s: s.count(ch) / len(s))
+        df[ch] = df['Text'].astype(str).apply(lambda s: s.count(ch) / len(s))
     return df
 
 
