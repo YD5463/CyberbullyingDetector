@@ -11,19 +11,29 @@ import swifter
 import re
 
 
-def merge_datasets() -> pd.DataFrame:
+def merge_datasets(data_path='./Data/Source1') -> pd.DataFrame:
     df = pd.DataFrame()
-    data_path = './Data/Source1'
     for filename in os.listdir(data_path):
         df1 = pd.read_csv(f'{data_path}/{filename}')
         df1 = df1[['Text', 'oh_label']]
         df = pd.concat([df, df1], axis=0)
+    df["Text"] = df["Text"].astype(str)
+    print("database merged successfully!")
     return df
 
 
-def add_punctuation_and_stopwords_features(df: pd.DataFrame) -> pd.DataFrame:
-    for ch in list(string.punctuation) + stopwords.words('english'):
+
+def add_punctuation_stopwords_curse_features(df: pd.DataFrame) -> pd.DataFrame:
+    def get_curses():
+        lst = []
+        with open("english_curse.csv") as curses_file:
+            for curse in curses_file.readlines():
+                lst.append(curse.replace("\n", ""))
+        return lst
+    curses = get_curses()
+    for ch in list(string.punctuation) + stopwords.words('english') + curses:
         df[ch] = df['Text'].astype(str).apply(lambda s: s.count(ch) / len(s))
+    print("add_punctuation_and_stopwords_features successfully!")
     return df
 
 
@@ -34,14 +44,60 @@ def add_count_misspell_feature(df: pd.DataFrame) -> pd.DataFrame:
         for _ in spell:
             counter += 1
         return counter / len(data)
+
     df["misspell_count"] = df["Text"].swifter.apply(helper)
+    print("add_count_misspell_feature successfully!")
+    return df
 
 
-def process_row(row):
-    lemmatizer = WordNetLemmatizer()
-    # row = row.translate(str.maketrans('', '', string.punctuation))
-    row = " ".join(lemmatizer.lemmatize(w) for w in nltk.wordpunct_tokenize(row))
-    return " ".join(w for w in nltk.wordpunct_tokenize(row))  # word exist in corpus and remove stop words
+def add_avg_word_len_feature(df: pd.DataFrame) -> pd.DataFrame:
+    df["avg_word_len"] = df["Text"].astype(str).swifter.apply(
+        lambda s: pd.Series(nltk.word_tokenize(s)).map(len).mean())
+    print("add_avg_word_len_feature successfully!")
+    return df
+
+
+def add_avg_sentence_len_feature(df: pd.DataFrame) -> pd.DataFrame:
+    df["sentence_count"] = df["Text"].astype(str).swifter.apply(
+        lambda text: pd.Series(nltk.sent_tokenize(text)).map(lambda sent: len(nltk.word_tokenize(sent))).mean())
+    print("add_avg_sentence_len_feature successfully!")
+    return df
+
+
+def add_uppercase_count_feature(df: pd.DataFrame):
+    df["uppercase_count"] = df['Text'].str.findall(r'[A-Z]').str.len()
+    return df
+
+
+def add_pos_features(df: pd.DataFrame):
+    def group_pos(tag):
+        groups = {"noun": ['NN', 'NNS', 'NNP', 'NNPS'], "verb": ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ'],
+                  "adverb": ['RB', 'RBR', 'RBS'], "adjective": ['JJ', 'JJR', 'JJS']}
+        for key, group in groups.items():
+            if tag in group:
+                return key
+        return None
+
+    features = df["Text"].swifter.apply(lambda s: pd.Series([x[1] for x in nltk.pos_tag(nltk.word_tokenize(s))]).
+                                apply(group_pos).value_counts(normalize=True))
+    print("add_pos_features successfully!")
+    return pd.concat([df, pd.DataFrame(list(features), index=features.index)], axis=0)
+
+
+# def process_row(row):
+#         df["Text"] = df["Text"].str.replace("[‘’“”…]", "", regex=True)
+#         df["Text"] = df["Text"].str.replace("\w*\d\w*", "", regex=True)
+#
+#         stop = stopwords.words('english')
+#         pat = r'\b(?:{})\b'.format('|'.join(stop))
+#         df['Text'] = df['Text'].str.replace(pat, '', regex=True)
+#         df['Text'] = df['Text'].str.replace(r'\s+', ' ', regex=True)
+#
+#         df['Text'] = df['Text'].str.lower()
+#     lemmatizer = WordNetLemmatizer()
+#     # row = row.translate(str.maketrans('', '', string.punctuation))
+#     row = " ".join(lemmatizer.lemmatize(w) for w in nltk.wordpunct_tokenize(row))
+#     return " ".join(w for w in nltk.wordpunct_tokenize(row))  # word exist in corpus and remove stop words
 
 
 def to_one_hot_rep(df: pd.DataFrame) -> pd.DataFrame:
@@ -61,13 +117,17 @@ def filter_noise(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def preprocess(train_part=0.7, use_cache=True) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
+    print("preprocess...")
     cleaned_output_path = "./Data/Source1/cleaned.csv"
     if use_cache and os.path.isfile(cleaned_output_path):
         df = pd.read_csv(cleaned_output_path)
     else:
         df = merge_datasets()
-        df = add_punctuation_and_stopwords_features(df)
+        df = add_punctuation_stopwords_curse_features(df)
         df = add_count_misspell_feature(df)
+        df = add_avg_word_len_feature(df)
+        df = add_uppercase_count_feature(df)
+        df = add_pos_features(df)
         # df["Text"] = df["Text"].apply(process_row)
         # df = to_one_hot_rep(df)
         df.to_csv(cleaned_output_path)

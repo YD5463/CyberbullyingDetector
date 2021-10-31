@@ -1,12 +1,12 @@
 import nltk
 import preprocess
-import models
+# import models
 import exploration
 from sklearn.metrics import classification_report
 
-nltk.download('words')
-nltk.download('wordnet')
-nltk.download('stopwords')
+# nltk.download('words')
+# nltk.download('wordnet')
+# nltk.download('stopwords')
 
 
 def main():
