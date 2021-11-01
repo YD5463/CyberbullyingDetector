@@ -12,13 +12,9 @@ pip install -r requirements.txt
 
 ### Data
 
-Download the **original data** from
+Download the **original data** from https://data.mendeley.com/datasets/jf4pzyvnpj/1
 
-[here]: https://data.mendeley.com/datasets/jf4pzyvnpj/1	"dataset"
-
-Or, the **cleaned data** (after preprocess that we have done) from 
-
-[here]: https://data.mendeley.com/datasets/jf4pzyvnpj/1	"cleaned_dataset"
+Or, the **cleaned data** (after preprocess that we have done) from https://drive.google.com/file/d/110jHv_zLWqgjHMpOKUkm6MMbGlmI82c4/view?usp=sharing
 
 
 
