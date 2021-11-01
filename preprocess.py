@@ -5,10 +5,12 @@ import pandas as pd
 import string
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
 from enchant.checker import SpellChecker
 import swifter
-import re
+
+
+# from nltk.stem import WordNetLemmatizer
+# import re
 
 
 def merge_datasets(data_path='./Data/Source1') -> pd.DataFrame:
@@ -18,9 +20,9 @@ def merge_datasets(data_path='./Data/Source1') -> pd.DataFrame:
         df1 = df1[['Text', 'oh_label']]
         df = pd.concat([df, df1], axis=0)
     df["Text"] = df["Text"].astype(str)
+    df = df.reset_index(drop=True)
     print("database merged successfully!")
     return df
-
 
 
 def add_punctuation_stopwords_curse_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -30,8 +32,11 @@ def add_punctuation_stopwords_curse_features(df: pd.DataFrame) -> pd.DataFrame:
             for curse in curses_file.readlines():
                 lst.append(curse.replace("\n", ""))
         return lst
+
     curses = get_curses()
-    for ch in list(string.punctuation) + stopwords.words('english') + curses:
+    features = list(string.punctuation) + list(stopwords.words('english')) + curses
+    # new_features_cols = []
+    for ch in features:
         df[ch] = df['Text'].astype(str).apply(lambda s: s.count(ch) / len(s))
     print("add_punctuation_and_stopwords_features successfully!")
     return df
@@ -45,27 +50,34 @@ def add_count_misspell_feature(df: pd.DataFrame) -> pd.DataFrame:
             counter += 1
         return counter / len(data)
 
-    df["misspell_count"] = df["Text"].swifter.apply(helper)
+    misspell_count = df["Text"].swifter.apply(helper).rename("misspell_count")
+    df = pd.concat([df, misspell_count], axis=1)
     print("add_count_misspell_feature successfully!")
     return df
 
 
 def add_avg_word_len_feature(df: pd.DataFrame) -> pd.DataFrame:
-    df["avg_word_len"] = df["Text"].astype(str).swifter.apply(
-        lambda s: pd.Series(nltk.word_tokenize(s)).map(len).mean())
+    avg_word_len = df["Text"].astype(str).swifter.apply(
+        lambda s: pd.Series(nltk.word_tokenize(s)).map(len).mean()).rename("avg_word_len")
+    df = pd.concat([df, avg_word_len], axis=1)
     print("add_avg_word_len_feature successfully!")
     return df
 
 
 def add_avg_sentence_len_feature(df: pd.DataFrame) -> pd.DataFrame:
-    df["sentence_count"] = df["Text"].astype(str).swifter.apply(
-        lambda text: pd.Series(nltk.sent_tokenize(text)).map(lambda sent: len(nltk.word_tokenize(sent))).mean())
+    sentence_count = df["Text"].astype(str).swifter.apply(
+        lambda text: pd.Series(nltk.sent_tokenize(text)).map(lambda sent: len(nltk.word_tokenize(sent))).mean())\
+        .rename("sentence_count")
+
+    df = pd.concat([df,sentence_count],axis=1)
     print("add_avg_sentence_len_feature successfully!")
     return df
 
 
 def add_uppercase_count_feature(df: pd.DataFrame) -> pd.DataFrame:
-    df["uppercase_count"] = df['Text'].str.findall(r'[A-Z]').str.len()
+    uppercase_count = df['Text'].str.findall(r'[A-Z]').str.len().rename("uppercase_count")
+    df = pd.concat([df,uppercase_count],axis=1)
+    print("add_uppercase_count_feature successfully!")
     return df
 
 
@@ -79,9 +91,10 @@ def add_pos_features(df: pd.DataFrame) -> pd.DataFrame:
         return None
 
     features = df["Text"].swifter.apply(lambda s: pd.Series([x[1] for x in nltk.pos_tag(nltk.word_tokenize(s))]).
-                                apply(group_pos).value_counts(normalize=True))
+                                        apply(group_pos).value_counts(normalize=True).copy())
     print("add_pos_features successfully!")
-    return pd.concat([df, pd.DataFrame(list(features), index=features.index)], axis=0)
+    features = features.fillna(0)
+    return pd.concat([df, features],axis=1)
 
 
 # def process_row(row):
@@ -100,41 +113,43 @@ def add_pos_features(df: pd.DataFrame) -> pd.DataFrame:
 #     return " ".join(w for w in nltk.wordpunct_tokenize(row))  # word exist in corpus and remove stop words
 
 
-def to_one_hot_rep(df: pd.DataFrame) -> pd.DataFrame:
+def to_one_hot_rep(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
     cv = CountVectorizer()
-    data_cv = cv.fit_transform(df.Text)
+    data_cv = cv.fit_transform(df[col_name])
     data_cv = pd.DataFrame(data_cv.toarray(), columns=cv.get_feature_names())
     data_cv["oh_label"] = df["oh_label"]
     return data_cv
 
 
-def filter_noise(df: pd.DataFrame) -> pd.DataFrame:
-    res = df.sum(axis=0)
-    res = res[res > res.median()]
-    ls = res.index.to_list()
-    del ls[0]
-    return df[df.columns.intersection(ls)]
+# def filter_noise(df: pd.DataFrame) -> pd.DataFrame:
+#     res = df.sum(axis=0)
+#     res = res[res > res.median()]
+#     ls = res.index.to_list()
+#     del ls[0]
+#     return df[df.columns.intersection(ls)]
 
 
-def preprocess(train_part=0.7, use_cache=True) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
+def preprocess(train_part=0.7, use_cache=False) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
     print("preprocess...")
     cleaned_output_path = "./Data/cleaned.csv"
     if use_cache and os.path.isfile(cleaned_output_path):
         df = pd.read_csv(cleaned_output_path)
     else:
         df = merge_datasets()
-        df = add_punctuation_stopwords_curse_features(df)
-        df = add_count_misspell_feature(df)
-        df = add_avg_word_len_feature(df)
-        df = add_uppercase_count_feature(df)
         df = add_pos_features(df)
+        df = add_punctuation_stopwords_curse_features(df)
+        df = add_uppercase_count_feature(df)
+        df = add_avg_word_len_feature(df)
+        df = add_count_misspell_feature(df)
+        df = add_avg_sentence_len_feature(df)
         # df["Text"] = df["Text"].apply(process_row)
         # df = to_one_hot_rep(df)
         df.to_csv(cleaned_output_path)
     label_name = "oh_label"
-    x = df.drop(label_name, axis=1)
-    y = df[label_name]
+    x = df.drop(label_name, axis=1).values
+    y = df[label_name].values
     num_rows = x.shape[0]
     mask_train = np.zeros(num_rows, dtype=bool)
     mask_train[np.random.choice(num_rows, int(num_rows * train_part), replace=False)] = True
+    print(mask_train.shape, x.shape, y.shape)
     return x[mask_train, :], y[mask_train], x[~mask_train, :], y[~mask_train]
