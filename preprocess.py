@@ -1,3 +1,5 @@
+from typing import List
+
 import nltk
 import os
 import numpy as np
@@ -110,11 +112,10 @@ def to_one_hot_rep(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
 #     del ls[0]
 #     return df[df.columns.intersection(ls)]
 
-def bug_fix(df:pd.DataFrame,label_name:str)->pd.DataFrame:
+def bug_fix(df:pd.DataFrame,ignored_columns:List[str])->pd.DataFrame:
     print("loaded!")
     df["uppercase_count"] /= df["Text"].str.len()
     print("fix broken col")
-    ignored_columns = ["Text", label_name]
     X_df = df.drop(ignored_columns,axis=1)
     normalized_X_df = (X_df-X_df.mean())/X_df.std()
     df = pd.concat([df[ignored_columns],normalized_X_df],axis=1)
@@ -126,6 +127,7 @@ def preprocess(train_part=0.7, use_cache=True) -> (np.ndarray, np.ndarray, np.nd
     print("preprocess...")
     cleaned_output_path = "./Data/cleaned.csv"
     label_name = "oh_label"
+    ignored_columns = ["Text", label_name]
     if use_cache and os.path.isfile(cleaned_output_path):
         df = pd.read_csv(cleaned_output_path,index_col=0)
         # df = bug_fix(df,label_name)
@@ -141,10 +143,11 @@ def preprocess(train_part=0.7, use_cache=True) -> (np.ndarray, np.ndarray, np.nd
         # df = to_one_hot_rep(df)
         df.to_csv(cleaned_output_path)
         print("Saved")
-    x = df.drop(label_name, axis=1).values
+    df = df.fillna(0)
+    x = df.drop(ignored_columns, axis=1).values
     y = df[label_name].values
     num_rows = x.shape[0]
     mask_train = np.zeros(num_rows, dtype=bool)
     mask_train[np.random.choice(num_rows, int(num_rows * train_part), replace=False)] = True
     print(mask_train.shape, x.shape, y.shape)
-    return x[mask_train, :], y[mask_train], x[~mask_train, :], y[~mask_train]
+    return x[mask_train, :], y[mask_train], x[~mask_train, :], y[~mask_train], df
