@@ -1,23 +1,41 @@
 import tensorflow.compat.v1 as tf
+import numpy as np
+from typing import List
+
 tf.disable_v2_behavior()
 
 
 class LogisticRegression:
-    def __init__(self, X_train, y_train, num_iter=5000, learning_rate=0.001):
+    def __init__(self, X_train, y_train, num_iter=5000, learning_rate=0.001, batch_size=100, print_step=1000):
+        """
+        :param X_train:
+        :param y_train:
+        :param num_iter:
+        :param learning_rate:
+        :param batch_size: -1 means all
+        """
         self.sess = tf.Session()
         features = X_train.shape[1]
         eps = 1e-12
         self.x = tf.placeholder(tf.float32, [None, features])
-        y_ = tf.placeholder(tf.float32, [None, 1])
+        y_train_variable = tf.placeholder(tf.float32, [None, 1])
         W = tf.Variable(tf.zeros([features, 1]))
         b = tf.Variable(tf.zeros([1]))
         self.y = 1 / (1.0 + tf.exp(-(tf.matmul(self.x, W) + b)))
-        loss = tf.reduce_mean(-(y_ * tf.log(self.y + eps) + (1 - y_) * tf.log(1 - y + eps)))
-        optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
+        loss = tf.reduce_mean(-(y_train_variable * tf.log(self.y + eps) + (1 - y_train_variable) * tf.log(
+            1 - self.y + eps)))  # cross entropy
+        optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)  # TODO: check other optimizers
         self.sess.run(tf.global_variables_initializer())
+        np.random.shuffle(X_train)
+        rows_num = X_train.shape[0]
         for i in range(0, num_iter):
-            _, loss_value = self.sess.run([optimizer, loss], feed_dict={x: X_train.to_numpy(), y_: y_train})
-            if i % 1000 == 0:
+            counter_step = i % (rows_num // batch_size)
+            X_batch = X_train[counter_step * batch_size:min((counter_step + 1) * batch_size, rows_num)]
+            Y_batch = y_train[counter_step * batch_size:min((counter_step + 1) * batch_size, rows_num)]
+            _, loss_value = self.sess.run([optimizer, loss],
+                                          feed_dict={self.x: X_batch, y_train_variable: Y_batch})
+
+            if i % print_step == 0:
                 print(f"iteration {i}: loss value is: {loss_value}")
 
     def predict(self, X_test, thr=0.5):
@@ -28,10 +46,44 @@ class LogisticRegression:
 
 class MLP:
     """
-    multi level perceprton implementation using tensorflow version 1
+    multi level perceptron implementation using tensorflow version 1
     """
-    def __init__(self):
-        pass
 
-    def predict(self):
-        pass
+    def __init__(self, X_train: np.ndarray, y_train, layers_sizes: List[int], learning_rate=0.001, num_iter=5000,
+                 batch_size=100,
+                 print_step=100):
+        self.sess = tf.Session()
+        rows_num, features = X_train.shape[0], X_train.shape[1]
+        eps = 1e-12
+        self.x = tf.placeholder(tf.float32, [None, features])
+        y_train_variable = tf.placeholder(tf.float32, [None, 1])
+        layers_sizes = [features] + layers_sizes.copy() + [1]
+        W = []
+        b = []
+        for i, layer_size in enumerate(layers_sizes[1:]):
+            W.append(tf.Variable(tf.zeros([layer_size, layers_sizes[i]])))
+            b.append(tf.Variable(tf.zeros(layer_size)))
+        # ff
+        self.y = tf.Variable(self.x)
+        for layer_w, layer_b in zip(W, b):
+            tf.assign(self.y, 1 / (1.0 + tf.exp(-(tf.add(tf.matmul(self.y, layer_w), layer_b)))))
+
+        loss = tf.reduce_mean(-(y_train_variable * tf.log(self.y + eps) + (1 - y_train_variable) * tf.log(
+            1 - self.y + eps)))  # cross entropy
+        optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)  # TODO: check other optimizers
+        self.sess.run(tf.global_variables_initializer())
+        np.random.shuffle(X_train)
+        for i in range(0, num_iter):
+            counter_step = i % (rows_num // batch_size)
+            X_batch = X_train[counter_step * batch_size:min((counter_step + 1) * batch_size, rows_num)]
+            Y_batch = y_train[counter_step * batch_size:min((counter_step + 1) * batch_size, rows_num)]
+            _, loss_value = self.sess.run([optimizer, loss],
+                                          feed_dict={self.x: X_batch, y_train_variable: Y_batch})
+
+            if i % print_step == 0:
+                print(f"iteration {i}: loss value is: {loss_value}")
+
+    def predict(self, X_test, thr=0.5):
+        predictions = self.sess.run(self.y, feed_dict={self.x: X_test.to_numpy()})
+        predictions[predictions >= thr] = 1
+        predictions[predictions < thr] = 0

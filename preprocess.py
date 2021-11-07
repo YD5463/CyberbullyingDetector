@@ -6,11 +6,9 @@ import string
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.corpus import stopwords
 from enchant.checker import SpellChecker
-import swifter
-
-
 # from nltk.stem import WordNetLemmatizer
 # import re
+import swifter
 
 
 def merge_datasets(data_path='./Data/Source1') -> pd.DataFrame:
@@ -66,17 +64,17 @@ def add_avg_word_len_feature(df: pd.DataFrame) -> pd.DataFrame:
 
 def add_avg_sentence_len_feature(df: pd.DataFrame) -> pd.DataFrame:
     sentence_count = df["Text"].astype(str).swifter.apply(
-        lambda text: pd.Series(nltk.sent_tokenize(text)).map(lambda sent: len(nltk.word_tokenize(sent))).mean())\
+        lambda text: pd.Series(nltk.sent_tokenize(text)).map(lambda sent: len(nltk.word_tokenize(sent))).mean()) \
         .rename("sentence_count")
 
-    df = pd.concat([df,sentence_count],axis=1)
+    df = pd.concat([df, sentence_count], axis=1)
     print("add_avg_sentence_len_feature successfully!")
     return df
 
 
 def add_uppercase_count_feature(df: pd.DataFrame) -> pd.DataFrame:
-    uppercase_count = df['Text'].str.findall(r'[A-Z]').str.len().rename("uppercase_count")
-    df = pd.concat([df,uppercase_count],axis=1)
+    uppercase_count = df['Text'].str.findall(r'[A-Z]').str.len().rename("uppercase_count")/df["Text"].str.len()
+    df = pd.concat([df, uppercase_count], axis=1)
     print("add_uppercase_count_feature successfully!")
     return df
 
@@ -94,23 +92,7 @@ def add_pos_features(df: pd.DataFrame) -> pd.DataFrame:
                                         apply(group_pos).value_counts(normalize=True).copy())
     print("add_pos_features successfully!")
     features = features.fillna(0)
-    return pd.concat([df, features],axis=1)
-
-
-# def process_row(row):
-#         df["Text"] = df["Text"].str.replace("[‘’“”…]", "", regex=True)
-#         df["Text"] = df["Text"].str.replace("\w*\d\w*", "", regex=True)
-#
-#         stop = stopwords.words('english')
-#         pat = r'\b(?:{})\b'.format('|'.join(stop))
-#         df['Text'] = df['Text'].str.replace(pat, '', regex=True)
-#         df['Text'] = df['Text'].str.replace(r'\s+', ' ', regex=True)
-#
-#         df['Text'] = df['Text'].str.lower()
-#     lemmatizer = WordNetLemmatizer()
-#     # row = row.translate(str.maketrans('', '', string.punctuation))
-#     row = " ".join(lemmatizer.lemmatize(w) for w in nltk.wordpunct_tokenize(row))
-#     return " ".join(w for w in nltk.wordpunct_tokenize(row))  # word exist in corpus and remove stop words
+    return pd.concat([df, features], axis=1)
 
 
 def to_one_hot_rep(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
@@ -129,11 +111,20 @@ def to_one_hot_rep(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
 #     return df[df.columns.intersection(ls)]
 
 
-def preprocess(train_part=0.7, use_cache=False) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
+def preprocess(train_part=0.7, use_cache=True) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
     print("preprocess...")
     cleaned_output_path = "./Data/cleaned.csv"
+    label_name = "oh_label"
     if use_cache and os.path.isfile(cleaned_output_path):
-        df = pd.read_csv(cleaned_output_path)
+        df = pd.read_csv(cleaned_output_path,index_col=0)
+        print("loaded!")
+        df["uppercase_count"] /= df["Text"].str.len()
+        print("fix broken col")
+        ignored_columns = ["Text", label_name]
+        X_df = df.drop(ignored_columns,axis=1)
+        normalized_X_df = (X_df-X_df.mean())/X_df.std()
+        df = pd.concat([df[ignored_columns],normalized_X_df],axis=1)
+        print("normalized")
     else:
         df = merge_datasets()
         df = add_pos_features(df)
@@ -144,8 +135,8 @@ def preprocess(train_part=0.7, use_cache=False) -> (np.ndarray, np.ndarray, np.n
         df = add_avg_sentence_len_feature(df)
         # df["Text"] = df["Text"].apply(process_row)
         # df = to_one_hot_rep(df)
-        df.to_csv(cleaned_output_path)
-    label_name = "oh_label"
+    df.to_csv(cleaned_output_path)
+    print("Saved")
     x = df.drop(label_name, axis=1).values
     y = df[label_name].values
     num_rows = x.shape[0]
