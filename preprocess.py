@@ -75,7 +75,7 @@ def add_avg_sentence_len_feature(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_uppercase_count_feature(df: pd.DataFrame) -> pd.DataFrame:
-    uppercase_count = df['Text'].str.findall(r'[A-Z]').str.len().rename("uppercase_count")/df["Text"].str.len()
+    uppercase_count = df['Text'].str.findall(r'[A-Z]').str.len().rename("uppercase_count") / df["Text"].str.len()
     df = pd.concat([df, uppercase_count], axis=1)
     print("add_uppercase_count_feature successfully!")
     return df
@@ -112,24 +112,25 @@ def to_one_hot_rep(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
 #     del ls[0]
 #     return df[df.columns.intersection(ls)]
 
-def bug_fix(df:pd.DataFrame,ignored_columns:List[str])->pd.DataFrame:
+def bug_fix(df: pd.DataFrame, ignored_columns: List[str]) -> pd.DataFrame:
     print("loaded!")
     df["uppercase_count"] /= df["Text"].str.len()
     print("fix broken col")
-    X_df = df.drop(ignored_columns,axis=1)
-    normalized_X_df = (X_df-X_df.mean())/X_df.std()
-    df = pd.concat([df[ignored_columns],normalized_X_df],axis=1)
+    X_df = df.drop(ignored_columns, axis=1)
+    normalized_X_df = (X_df - X_df.mean()) / X_df.std()
+    df = pd.concat([df[ignored_columns], normalized_X_df], axis=1)
     print("normalized")
     return df
 
 
-def preprocess(train_part=0.7, use_cache=True) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
+def preprocess(train_part=0.7, use_cache=True, debug=True) -> (
+        np.ndarray, np.ndarray, np.ndarray, np.ndarray, pd.DataFrame):
     print("preprocess...")
-    cleaned_output_path = "./Data/cleaned.csv"
+    cleaned_output_path = "./Data/cleaned-debug.csv" if debug else "./Data/cleaned.csv"
     label_name = "oh_label"
     ignored_columns = ["Text", label_name]
     if use_cache and os.path.isfile(cleaned_output_path):
-        df = pd.read_csv(cleaned_output_path,index_col=0)
+        df = pd.read_csv(cleaned_output_path, index_col=0)
         # df = bug_fix(df,label_name)
     else:
         df = merge_datasets()
@@ -141,7 +142,8 @@ def preprocess(train_part=0.7, use_cache=True) -> (np.ndarray, np.ndarray, np.nd
         df = add_avg_sentence_len_feature(df)
         # df["Text"] = df["Text"].apply(process_row)
         # df = to_one_hot_rep(df)
-        df.to_csv(cleaned_output_path)
+        if not debug:
+            df.to_csv(cleaned_output_path)
         print("Saved")
     df = df.fillna(0)
     x = df.drop(ignored_columns, axis=1).values
