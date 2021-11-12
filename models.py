@@ -69,10 +69,9 @@ class MLP:
             b.append(tf.Variable(tf.zeros(layer_size)))
         # ff
         prev_output = tf.nn.relu(tf.matmul(self.x, W[0]) + b[0])
-        for layer_w, layer_b in zip(W[1:], b[1:]):
-            # tf.nn.relu
+        for layer_w, layer_b in zip(W[1:-1], b[1:-1]):
             prev_output = tf.nn.relu(1 / (1.0 + tf.exp(-(tf.add(tf.matmul(prev_output, layer_w), layer_b)))))
-        self.y = tf.nn.sigmoid(prev_output)
+        self.y = tf.nn.sigmoid(1 / (1.0 + tf.exp(-(tf.add(tf.matmul(prev_output, W[-1]), b[-1])))))
         loss = tf.reduce_mean(-(y_train_variable * tf.log(self.y + eps) + (1 - y_train_variable) * tf.log(
             1 - self.y + eps)))  # cross entropy
         update = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)  # TODO: check other optimizers
