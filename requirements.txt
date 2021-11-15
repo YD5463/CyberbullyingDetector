@@ -7,3 +7,8 @@ scikit-learn~=1.0
 swifter~=1.0.9
 pyenchant~=3.2.2
 
+
+matplotlib~=3.4.3
+seaborn~=0.11.2
+torch~=1.9.1
+xgboost~=1.5.0

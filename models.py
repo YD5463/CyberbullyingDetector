@@ -6,6 +6,12 @@ tf.disable_v2_behavior()
 eps = 1e-12
 
 
+def save_loss(data: list, filename: str):
+    with open(filename, 'w') as f:
+        for item in data:
+            f.write("%s\n" % item)
+
+
 class LogisticRegression:
     def __init__(self, X_train: np.ndarray, y_train: np.ndarray, num_iter=5000, learning_rate=0.001, batch_size=100,
                  print_step=1000):
@@ -14,20 +20,21 @@ class LogisticRegression:
         :param num_iter:
         :param batch_size: -1 means all
         """
+        self.losses = []
         self.sess = tf.Session()
         features = X_train.shape[1]
-        self.x = tf.placeholder(tf.float32, [None, features])
-        y_train_variable = tf.placeholder(tf.float32, [None, 1])
-        W = tf.Variable(tf.zeros([features, 1]))
-        b = tf.Variable(tf.zeros([1]))
+        self.x = tf.placeholder(tf.float64, [None, features])
+        y_train_variable = tf.placeholder(tf.float64, [None, 1])
+        W = tf.Variable(tf.random.truncated_normal([features, 1],dtype=tf.float64))
+        b = tf.Variable(tf.random.truncated_normal([1],dtype=tf.float64))
         self.y = 1 / (1.0 + tf.exp(-(tf.matmul(self.x, W) + b)))
-        loss = tf.reduce_mean(-(0.2 * y_train_variable * tf.log(self.y + eps) + 0.8 * (1 - y_train_variable) * tf.log(
+        loss = tf.reduce_mean(-(20 * y_train_variable * tf.log(self.y + eps) + 80 * (1 - y_train_variable) * tf.log(
             1 - self.y + eps)))  # cross entropy
         update = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)  # TODO: check other optimizers
         self.sess.run(tf.global_variables_initializer())
         np.random.shuffle(X_train)
         rows_num = X_train.shape[0]
-        for i in range(0, num_iter):
+        for i in range(0, num_iter * rows_num):
             counter_step = i % (rows_num // batch_size)
             X_batch = X_train[counter_step * batch_size:min((counter_step + 1) * batch_size, rows_num)]
             Y_batch = y_train[counter_step * batch_size:min((counter_step + 1) * batch_size, rows_num)]
@@ -36,6 +43,8 @@ class LogisticRegression:
             loss_value = self.sess.run(loss, feed_dict={self.x: X_batch, y_train_variable: Y_batch})
             if i % print_step == 0:
                 print(f"iteration {i}: loss value is: {loss_value}")
+                self.losses.append(loss_value)
+        save_loss(self.losses, filename="LogisticRegression.txt")
 
     def predict(self, X_test, thr=0.5):
         predictions = self.sess.run(self.y, feed_dict={self.x: X_test})
@@ -59,14 +68,15 @@ class MLP:
         :param print_step: print loss value every print_step echos
         """
         self.sess = tf.Session()
+        self.losses = []
         rows_num, features = X_train.shape[0], X_train.shape[1]
         self.x = tf.placeholder(tf.float32, [None, features])
         y_train_variable = tf.placeholder(tf.float32, [None, 1])
         layers_sizes = [features] + layers_sizes.copy() + [1]
         W, b = [], []
         for i, layer_size in enumerate(layers_sizes[1:]):
-            W.append(tf.Variable(tf.zeros([layers_sizes[i], layer_size])))
-            b.append(tf.Variable(tf.zeros(layer_size)))
+            W.append(tf.Variable(tf.zeros([layers_sizes[i], layer_size])))  # random.truncated_normal
+            b.append(tf.Variable(tf.zeros([layer_size])))
         # ff
         prev_output = tf.nn.relu(tf.matmul(self.x, W[0]) + b[0])
         for layer_w, layer_b in zip(W[1:-1], b[1:-1]):
@@ -77,7 +87,7 @@ class MLP:
         update = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)  # TODO: check other optimizers
         self.sess.run(tf.global_variables_initializer())
         np.random.shuffle(X_train)
-        for i in range(0, num_iter):
+        for i in range(0, num_iter * rows_num):
             counter_step = i % (rows_num // batch_size)
             X_batch = X_train[counter_step * batch_size:min((counter_step + 1) * batch_size, rows_num)]
             Y_batch = y_train[counter_step * batch_size:min((counter_step + 1) * batch_size, rows_num)]
@@ -86,9 +96,14 @@ class MLP:
             loss_value = self.sess.run(loss, feed_dict={self.x: X_batch, y_train_variable: Y_batch})
             if i % print_step == 0:
                 print(f"iteration {i}: loss value is: {loss_value}")
+                self.losses.append(loss_value)
+        save_loss(self.losses,filename="MLP.txt")
 
     def predict(self, X_test, thr=0.5):
         predictions = self.sess.run(self.y, feed_dict={self.x: X_test})
         predictions[predictions >= thr] = 1
         predictions[predictions < thr] = 0
         return predictions
+
+
+

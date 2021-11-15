@@ -10,6 +10,12 @@
 pip install -r requirements.txt
 ```
 
+```
+pip install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio===0.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+```
+
+and also https://developer.nvidia.com/cuda-zone 
+
 ### Data
 
 Download the **original data** from https://data.mendeley.com/datasets/jf4pzyvnpj/1
