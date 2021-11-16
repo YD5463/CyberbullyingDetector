@@ -28,7 +28,9 @@ class LogisticRegression:
         W = tf.Variable(tf.random.truncated_normal([features, 1],dtype=tf.float64))
         b = tf.Variable(tf.random.truncated_normal([1],dtype=tf.float64))
         self.y = 1 / (1.0 + tf.exp(-(tf.matmul(self.x, W) + b)))
-        loss = tf.reduce_mean(-(20 * y_train_variable * tf.log(self.y + eps) + 80 * (1 - y_train_variable) * tf.log(
+        w1_weight = (y_train == 1).sum()    # for imbalance data
+        w0_weight = (y_train == 0).sum()
+        loss = tf.reduce_mean(-(((w1_weight+w0_weight)/w1_weight) * y_train_variable * tf.log(self.y + eps) + ((w1_weight+w0_weight)/w0_weight) * (1 - y_train_variable) * tf.log(
             1 - self.y + eps)))  # cross entropy
         update = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)  # TODO: check other optimizers
         self.sess.run(tf.global_variables_initializer())
@@ -75,14 +77,16 @@ class MLP:
         layers_sizes = [features] + layers_sizes.copy() + [1]
         W, b = [], []
         for i, layer_size in enumerate(layers_sizes[1:]):
-            W.append(tf.Variable(tf.zeros([layers_sizes[i], layer_size])))  # random.truncated_normal
-            b.append(tf.Variable(tf.zeros([layer_size])))
+            W.append(tf.Variable(tf.random.truncated_normal([layers_sizes[i], layer_size],dtype=tf.float64)))  # random.truncated_normal
+            b.append(tf.Variable(tf.random.truncated_normal([layer_size],dtype=tf.float64)))
         # ff
         prev_output = tf.nn.relu(tf.matmul(self.x, W[0]) + b[0])
         for layer_w, layer_b in zip(W[1:-1], b[1:-1]):
             prev_output = tf.nn.relu(1 / (1.0 + tf.exp(-(tf.add(tf.matmul(prev_output, layer_w), layer_b)))))
         self.y = tf.nn.sigmoid(1 / (1.0 + tf.exp(-(tf.add(tf.matmul(prev_output, W[-1]), b[-1])))))
-        loss = tf.reduce_mean(-(y_train_variable * tf.log(self.y + eps) + (1 - y_train_variable) * tf.log(
+        w1_weight = (y_train == 1).sum()  # for imbalance data
+        w0_weight = (y_train == 0).sum()
+        loss = tf.reduce_mean(-(((w1_weight+w0_weight)/w1_weight)*y_train_variable * tf.log(self.y + eps) + ((w1_weight+w0_weight)/w0_weight)*(1 - y_train_variable) * tf.log(
             1 - self.y + eps)))  # cross entropy
         update = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)  # TODO: check other optimizers
         self.sess.run(tf.global_variables_initializer())
