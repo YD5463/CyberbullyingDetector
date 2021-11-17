@@ -2,3 +2,6 @@
 .idea/
 __pycache__/
 Data/cleaned.csv
+LogisticRegression.txt
+MLP.txt
+report*.txt
