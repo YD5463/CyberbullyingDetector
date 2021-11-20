@@ -20,7 +20,7 @@ def main():
     #     r1.write(report)
     df = df.drop("Text",axis=1)
 
-    mlp = models.MLP(x_train, y_train, [500, 400, 350,200,100],epoch=30)
+    mlp = models.MLP(x_train, y_train, [500, 400, 350,200,100],epoch=100,learning_rate=0.001)
     mlp_predictions = mlp.predict(x_test)
     with open("report2.txt","w") as r1:
         report = classification_report(y_test, mlp_predictions, zero_division=0)
