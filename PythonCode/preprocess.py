@@ -9,7 +9,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from nltk.corpus import stopwords
 from enchant.checker import SpellChecker
 # from nltk.stem import WordNetLemmatizer
-# import re
+from collections import Counter
+import re
 import swifter
 
 
@@ -153,3 +154,6 @@ def preprocess(train_part=0.7, use_cache=True, debug=True) -> (
     mask_train[np.random.choice(num_rows, int(num_rows * train_part), replace=False)] = True
     print(mask_train.shape, x.shape, y.shape)
     return x[mask_train, :], y[mask_train], x[~mask_train, :], y[~mask_train], df
+
+
+

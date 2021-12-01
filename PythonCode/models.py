@@ -2,6 +2,9 @@ import tensorflow.compat.v1 as tf
 import numpy as np
 from typing import List
 
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
+
 tf.disable_v2_behavior()
 eps = 1e-2
 
@@ -130,3 +133,58 @@ class MLP:
         predictions[predictions < thr] = 0
         return predictions
 
+# --------------------------------------------------
+# def build_logisticRegression(features:int):
+#     x = tf.placeholder(tf.float64, [None, features])
+#     y_train_variable = tf.placeholder(tf.float64, [None, 1])
+#     W = tf.Variable(tf.random.uniform([features, 1],dtype=tf.float64))
+#     b = tf.Variable(tf.random.uniform([1],dtype=tf.float64))
+#     return tf.add(tf.matmul(x, W), b)
+#
+# def predict(sess,X_test,x_placeholder,y_final,thr=0.5):
+#     predictions = sess.run(tf.nn.sigmoid(sess.run(y_final, feed_dict={x_placeholder: X_test})))
+#     predictions[predictions >= thr] = 1
+#     predictions[predictions < thr] = 0
+#     print(classification_report(y_test, predictions))
+#     cc = confusion_matrix(y_test, predictions, labels=[0, 1])
+#     sns.heatmap(cc, annot=True, fmt="g", cmap='Blues')
+#     plt.xlabel("Predicted label")
+#     plt.title("Confusion Matrix")
+#     plt.ylabel("True label")
+#     plt.show()
+#     return predictions
+#
+#
+# def train(sess,final_y,y_train_variable,x_placeholder,adaptive=True,learning_rate=0.1,epoch=30,batch_size=200,model_name="MLP"):
+#     # assume x_train,y_train,x_test,y_test,x_validation, y_validation are allready declared
+#     losses = []
+#     test_loss = []
+#     valid_loss = []
+#     learning_rate_tensor = tf.placeholder(tf.float64, shape=[])  # tensor for implement dynamic learning rate
+#     lr = learning_rate
+#     w1_weight = (y_train == 1).sum()
+#     w0_weight = (y_train == 0).sum()
+#     loss = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(labels=y_train_variable,
+#             logits= tf.cast(final_y, tf.float64), pos_weight=tf.constant((w1_weight+w0_weight)/w1_weight, tf.float64)))
+#     update = tf.train.AdamOptimizer(learning_rate_tensor).minimize(loss)
+#     sess.run(tf.global_variables_initializer())
+#     rows_num = x_train.shape[0]
+#     for i in range(epoch):
+#         for counter_step in range(rows_num//batch_size):
+#             X_batch = x_train[counter_step * batch_size:min((counter_step + 1) * batch_size, rows_num)]
+#             Y_batch = y_train[counter_step * batch_size:min((counter_step + 1) * batch_size, rows_num)]
+#             sess.run(update, feed_dict={x_placeholder: X_batch, y_train_variable: Y_batch,learning_rate_tensor:lr})
+#         loss_value = sess.run(loss, feed_dict={x_placeholder: x_train, y_train_variable: y_train,learning_rate_tensor:lr})
+#         loss_value_test = sess.run(loss, feed_dict={x_placeholder:x_test, y_train_variable: y_test,learning_rate_tensor:lr})
+#         loss_value_validation = sess.run(loss, feed_dict={x_placeholder:x_validation, y_train_variable: y_validation,learning_rate_tensor:lr})
+#         print(f"Iteration {i+1}, loss = {loss_value}")
+#         losses.append(loss_value)
+#         test_loss.append(loss_value_test)
+#         valid_loss.append(loss_value_validation)
+#         if adaptive and losses[i] > losses[i-1]:  # check if the loss divergence
+#             print("=====change learning rate=========")
+#             lr = lr/10
+#     save_loss(losses, filename=f"{model_name}_train_error.txt")
+#     save_loss(test_loss, filename=f"{model_name}_test_error.txt")
+#     save_loss(valid_loss, filename=f"{model_name}_validation_error.txt")
+#     return losses,test_loss,valid_loss
