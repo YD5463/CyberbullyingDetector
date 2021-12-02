@@ -1,18 +1,6 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
-
-torch.manual_seed(1)
-torch.cuda.is_available()
-
-
-def main(df):
-    x_train, x_test, y_train, y_test = train_test_split(df.drop(["Text", "oh_label"], axis=1), df["oh_label"],
-                                                        test_size=0.2, random_state=1)
 
 
 def xgboost_pipeline(x_train, y_train, x_test, y_test):

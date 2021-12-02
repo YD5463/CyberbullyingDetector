@@ -1,17 +1,21 @@
+import pandas as pd
+import matplotlib.pyplot as plt
 from typing import List
-
 import nltk
 import os
 import numpy as np
-import pandas as pd
 import string
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.corpus import stopwords
 from enchant.checker import SpellChecker
-# from nltk.stem import WordNetLemmatizer
-from collections import Counter
-import re
-import swifter
+
+
+def label_balance(df: pd.DataFrame):
+    fig1, ax1 = plt.subplots()
+    ax1.pie(df["oh_label"].value_counts(), explode=(0, 0.1), labels=["bullying", "ok"], autopct='%1.1f%%',
+            shadow=True, startangle=90)
+    ax1.axis('equal')
+    plt.show()
 
 
 def merge_datasets(data_path='./Data/Source1') -> pd.DataFrame:
@@ -154,6 +158,16 @@ def preprocess(train_part=0.7, use_cache=True, debug=True) -> (
     mask_train[np.random.choice(num_rows, int(num_rows * train_part), replace=False)] = True
     print(mask_train.shape, x.shape, y.shape)
     return x[mask_train, :], y[mask_train], x[~mask_train, :], y[~mask_train], df
+
+
+def plot_distribution(y):
+    fig1, ax1 = plt.subplots()
+    ax1.pie(y.value_counts(), explode=[0, 0.1], labels=["not bulling", "bulling"], autopct='%1.1f%%',
+            shadow=True, startangle=90)
+    ax1.axis('equal')
+    plt.title("Data distribution")
+    plt.show()
+
 
 
 
