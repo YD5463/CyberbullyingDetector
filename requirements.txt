@@ -12,3 +12,4 @@ matplotlib~=3.4.3
 seaborn~=0.11.2
 torch~=1.9.1
 xgboost~=1.5.0
+gensim

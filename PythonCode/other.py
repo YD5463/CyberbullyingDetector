@@ -1,6 +1,10 @@
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
+from gensim.test.utils import common_texts
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+from tensorflow.keras.layers import Dense,MaxPooling1D,Conv1D,Flatten,Input
+
 
 
 def xgboost_pipeline(x_train, y_train, x_test, y_test):
@@ -26,5 +30,22 @@ def lstm():
     pass
 
 
+
 def cnn_with_word2vec():
-    pass
+    documents = [TaggedDocument(doc, [i]) for i, doc in enumerate(common_texts)]
+    doc2vec_model = Doc2Vec(documents, vector_size=5, window=2, min_count=1, workers=4)
+
+    # sequence_input = Input(shape=(5,), dtype='int32')
+    #
+    # l_cov1 = Conv1D(128, 5, activation='relu')(embedded_sequences)
+    # l_pool1 = MaxPooling1D(5)(l_cov1)
+    # l_cov2 = Conv1D(128, 5, activation='relu')(l_pool1)
+    # l_pool2 = MaxPooling1D(5)(l_cov2)
+    # l_cov3 = Conv1D(128, 5, activation='relu')(l_pool2)
+    # l_pool3 = MaxPooling1D(35)(l_cov3)  # global max pooling
+    # l_flat = Flatten()(l_pool3)
+    # l_dense = Dense(128, activation='relu')(l_flat)
+    # preds = Dense(len(macronum), activation='softmax')(l_dense)
+
+
+cnn_with_word2vec()

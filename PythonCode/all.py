@@ -5,14 +5,6 @@ from nltk.corpus import stopwords
 import tensorflow.compat.v1 as tf
 from collections import Counter
 import re
-from typing import List
-import os
-# from nltk.stem import WordNetLemmatizer
-from enchant.checker import SpellChecker
-import string
-import nltk
-import swifter
-import math
 import seaborn as sns
 
 tf.disable_v2_behavior()
