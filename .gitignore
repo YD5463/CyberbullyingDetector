@@ -6,3 +6,4 @@ LogisticRegression.txt
 MLP.txt
 report*.txt
 Outputs/
+*.bin*
