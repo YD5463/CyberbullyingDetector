@@ -21,15 +21,4 @@ Download the **original data** from https://data.mendeley.com/datasets/jf4pzyvnp
 
 Or, the **cleaned data** (after preprocess that we have done) from https://drive.google.com/file/d/1galjZGGNSg6eOUXg8RLXaNWrG4yF5MQ5/view
 
-## Features
-
-- feature1
-- feature 2
-- feature 3
-
-## Models
-
-
-
-## Evaluations
 
